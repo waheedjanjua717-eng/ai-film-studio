@@ -8,4 +8,6 @@ directory = "./public"
 [[d1_databases]]
 binding = "DB"
 database_name = "ai-film-studio"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "
+
+2dddc81d-37db-41f8-8802-466c1d399535"
