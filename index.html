@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Film Studio</title>
+<style>
+body{font-family:system-ui;margin:0;background:#111;color:#eee}
+main{max-width:720px;margin:auto;padding:18px}
+.card{background:#1b1b1b;border-radius:16px;padding:16px;margin:12px 0}
+input,textarea,select,button{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #444;background:#222;color:#fff}
+button{background:#fff;color:#111;font-weight:700}
+.progress{height:12px;background:#333;border-radius:8px;overflow:hidden}
+.bar{height:100%;width:0;background:#fff}
+.small{color:#aaa;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>🎬 AI Film Studio</h1>
+<p class="small">Persistent movie production dashboard — Phase 1</p>
+
+<div class="card">
+<h2>New Movie</h2>
+<input id="title" placeholder="Movie title">
+<input id="genre" placeholder="Genre e.g. Sci-Fi Thriller">
+<input id="minutes" type="number" value="60" placeholder="Minutes">
+<textarea id="idea" rows="5" placeholder="Your movie idea"></textarea>
+<button onclick="createProject()">Create Project</button>
+</div>
+
+<div id="projects"></div>
+</main>
+
+<script>
+async function createProject(){
+  const r=await fetch('/api/projects',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({
+      title:document.querySelector('#title').value,
+      genre:document.querySelector('#genre').value,
+      target_minutes:Number(document.querySelector('#minutes').value||60),
+      story_idea:document.querySelector('#idea').value,
+      language:'English'
+    })
+  });
+  if(r.ok){ alert('Project saved!'); load(); }
+}
+
+async function load(){
+  const projects=await (await fetch('/api/projects')).json();
+  const box=document.querySelector('#projects');
+  box.innerHTML='';
+  for(const p of projects){
+    const jobs=await (await fetch('/api/projects/'+p.id+'/jobs')).json();
+    const done=jobs.filter(x=>x.status==='done').length;
+    const pct=jobs.length?Math.round(done/jobs.length*100):0;
+    box.innerHTML += `
+      <div class="card">
+        <h2>🎬 ${escapeHtml(p.title)}</h2>
+        <div>${escapeHtml(p.genre)} · ${p.target_minutes} min</div>
+        <p class="small">Status: ${p.status} · Jobs: ${done}/${jobs.length}</p>
+        <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+        <button onclick="addJob('${p.id}')">Queue Next Job</button>
+      </div>`;
+  }
+}
+
+async function addJob(id){
+  await fetch('/api/projects/'+id+'/jobs',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({type:'scene_plan',payload:{instruction:'Create next production scene'}})
+  });
+  load();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+load();
+</script>
+</body>
+</html>
